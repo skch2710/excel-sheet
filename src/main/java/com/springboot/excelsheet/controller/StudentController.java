@@ -78,5 +78,50 @@ public class StudentController {
 				.body(resource);
 
 	}
+	
+	/**
+	 * Download Students file.
+	 *
+	 * @param request  the request
+	 * @return the response entity
+	 */
+	@GetMapping("/downloadStudents")
+	public ResponseEntity<Resource> downloadStudents(HttpServletRequest request) {
+		
+		String filePath = studentService.getAllStudents();
+		
+		// Load file as Resource
+		Resource resource;
+		Path path = Paths.get(filePath);
+		try {
+			resource = new UrlResource(path.toUri());
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			return null;
+		}
+
+		// Try to determine file's content type
+		String contentType = null;
+		try {
+			contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+		} catch (IOException ex) {
+			System.out.println("Could not determine file type.");
+		}
+
+		// Fallback to the default content type if type could not be determined
+		if (contentType == null) {
+			contentType = "application/octet-stream";
+		}
+
+		return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))
+				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+				.body(resource);
+
+	}
+	
+	@GetMapping("/findAll")
+	public ResponseEntity<Result> findAll(){
+		return ResponseEntity.ok(studentService.findAll());
+	}
 
 }

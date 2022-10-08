@@ -9,8 +9,9 @@ public interface StudentService {
 
 	Result save(StudentDTO studentDTO);
 
-	Result getAllStudents();
+	String getAllStudents();
 
 	Result uploadExcelSheet(MultipartFile file);
-
+	
+	Result findAll();
 }

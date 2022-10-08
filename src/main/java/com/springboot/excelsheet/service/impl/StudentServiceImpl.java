@@ -32,6 +32,7 @@ import com.springboot.excelsheet.dto.Result;
 import com.springboot.excelsheet.dto.StudentDTO;
 import com.springboot.excelsheet.dto.UploadStdentDTO;
 import com.springboot.excelsheet.exception.CustomException;
+import com.springboot.excelsheet.mapper.ObjectMapper;
 import com.springboot.excelsheet.model.Student;
 import com.springboot.excelsheet.service.StudentService;
 import com.springboot.excelsheet.util.ExcelHelper;
@@ -44,6 +45,8 @@ public class StudentServiceImpl implements StudentService {
 
 	@Autowired
 	private StudentDAO studentDAO;
+
+	private ObjectMapper MAPPER = ObjectMapper.INSTANCE;
 
 	/** The servlet context. */
 	@Autowired
@@ -62,11 +65,6 @@ public class StudentServiceImpl implements StudentService {
 
 	@Override
 	public Result save(StudentDTO studentDTO) {
-		return null;
-	}
-
-	@Override
-	public Result getAllStudents() {
 		return null;
 	}
 
@@ -205,6 +203,88 @@ public class StudentServiceImpl implements StudentService {
 			}
 		}
 		return errorPath;
+	}
+
+	/**
+	 * Students file generation.
+	 *
+	 * @return the string
+	 */
+	@Override
+	public String getAllStudents() {
+		XSSFWorkbook workbook = null;
+		String downloadPath = "";
+		try {
+			List<StudentDTO> downloadStudents = MAPPER.fromStudent(studentDAO.findAll());
+			workbook = new XSSFWorkbook();
+			XSSFSheet spreadsheet = workbook.createSheet("Student Sheet");
+			XSSFRow row;
+			int index = 1;
+			Map<Integer, Object[]> downloadData = new TreeMap<Integer, Object[]>();
+			downloadData.put(index++, new Object[] { "Student Id", "Full Name", "Email ID", "Mobile Number", "Course", "Fee" });
+
+			for (StudentDTO downloadStudent : downloadStudents) {
+				downloadData.put(index++,
+						new Object[] { downloadStudent.getStudentId(), downloadStudent.getFullName(),
+								downloadStudent.getEmailId(), downloadStudent.getMobileNumber(),
+								downloadStudent.getCourse(), downloadStudent.getFee() });
+			}
+
+			Set<Integer> keys = downloadData.keySet();
+
+			int rowid = 0;
+			for (Integer key : keys) {
+
+				row = spreadsheet.createRow(rowid++);
+				Object[] objects = downloadData.get(key);
+				int cellid = 0;
+
+				for (Object obj : objects) {
+					Cell cell = row.createCell(cellid++);
+					cell.setCellValue((String) obj);
+				}
+			}
+			String actualPath = filePath + File.separator + new Date().getTime();
+			String fullFilePath = actualPath + File.separator + "STUDENTS.xlsx";
+			boolean exists = new File(actualPath).exists();
+			if (!exists) {
+				new File(actualPath).mkdirs();
+			}
+			// writing the workbook into the file...
+			FileOutputStream out = new FileOutputStream(new File(fullFilePath));
+			workbook.write(out);
+			out.close();
+			downloadPath = fullFilePath;
+
+		} catch (Exception e) {
+			throw new CustomException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		} finally {
+			if (workbook != null) {
+				try {
+					workbook.close();
+				} catch (IOException e) {
+					log.error("error in errorFileGeneration while workbook closing", e);
+					throw new CustomException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+				}
+			}
+		}
+		return downloadPath;
+	}
+
+	@Override
+	public Result findAll() {
+		Result result = null;
+		try {
+
+			List<StudentDTO> studentDTOs = MAPPER.fromStudent(studentDAO.findAll());
+
+			result = new Result(studentDTOs);
+
+		} catch (Exception e) {
+			throw new CustomException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+
+		return result;
 	}
 
 }

@@ -29,6 +29,10 @@ dependencies {
     implementation 'org.apache.poi:poi-ooxml:5.2.1'
     implementation 'org.springdoc:springdoc-openapi-ui:1.6.9' 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	
+	//for object mapping
+	implementation 'org.mapstruct:mapstruct:1.5.2.Final'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.2.Final'
 }
 
 tasks.named('test') {
