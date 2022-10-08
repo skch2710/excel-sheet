@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.springboot.excelsheet.dto.Result;
+import com.springboot.excelsheet.exception.CustomException;
 import com.springboot.excelsheet.service.StudentService;
 
 @RestController
@@ -78,49 +80,32 @@ public class StudentController {
 				.body(resource);
 
 	}
-	
+
 	/**
 	 * Download Students file.
 	 *
-	 * @param request  the request
+	 * @param request the request
 	 * @return the response entity
 	 */
 	@GetMapping("/downloadStudents")
 	public ResponseEntity<Resource> downloadStudents(HttpServletRequest request) {
-		
 		String filePath = studentService.getAllStudents();
-		
-		// Load file as Resource
 		Resource resource;
-		Path path = Paths.get(filePath);
+		String contentType = "application/octet-stream";
+		String headerValue = null;
 		try {
+			Path path = Paths.get(filePath);
 			resource = new UrlResource(path.toUri());
-		} catch (MalformedURLException e) {
-			e.printStackTrace();
-			return null;
+			headerValue = "attachment; filename=\"" + resource.getFilename() + "\"";
+		} catch (Exception e) {
+			throw new CustomException(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-
-		// Try to determine file's content type
-		String contentType = null;
-		try {
-			contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
-		} catch (IOException ex) {
-			System.out.println("Could not determine file type.");
-		}
-
-		// Fallback to the default content type if type could not be determined
-		if (contentType == null) {
-			contentType = "application/octet-stream";
-		}
-
 		return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType))
-				.header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-				.body(resource);
-
+				.header(HttpHeaders.CONTENT_DISPOSITION, headerValue).body(resource);
 	}
-	
+
 	@GetMapping("/findAll")
-	public ResponseEntity<Result> findAll(){
+	public ResponseEntity<Result> findAll() {
 		return ResponseEntity.ok(studentService.findAll());
 	}
 

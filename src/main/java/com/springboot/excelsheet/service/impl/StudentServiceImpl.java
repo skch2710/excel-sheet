@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.springboot.excelsheet.common.Constants;
 import com.springboot.excelsheet.dao.StudentDAO;
 import com.springboot.excelsheet.dto.FileUploadResponseDTO;
 import com.springboot.excelsheet.dto.Result;
@@ -133,7 +134,7 @@ public class StudentServiceImpl implements StudentService {
 	/**
 	 * Error file generation.
 	 *
-	 * @param uploadUserDataDTOs the upload user data DT os
+	 * @param uploadStudentDataDTOs the upload Student data DTOs
 	 * @param originalFileName   the original file name
 	 * @return the string
 	 */
@@ -221,7 +222,8 @@ public class StudentServiceImpl implements StudentService {
 			XSSFRow row;
 			int index = 1;
 			Map<Integer, Object[]> downloadData = new TreeMap<Integer, Object[]>();
-			downloadData.put(index++, new Object[] { "Student Id", "Full Name", "Email ID", "Mobile Number", "Course", "Fee" });
+			downloadData.put(index++,
+					new Object[] { "Student Id", "Full Name", "Email ID", "Mobile Number", "Course", "Fee" });
 
 			for (StudentDTO downloadStudent : downloadStudents) {
 				downloadData.put(index++,
@@ -230,27 +232,38 @@ public class StudentServiceImpl implements StudentService {
 								downloadStudent.getCourse(), downloadStudent.getFee() });
 			}
 
-			Set<Integer> keys = downloadData.keySet();
+			XSSFCellStyle style = workbook.createCellStyle();
+			style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+			style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
 			int rowid = 0;
-			for (Integer key : keys) {
+			for (Integer key : downloadData.keySet()) {
 
-				row = spreadsheet.createRow(rowid++);
+				row = spreadsheet.createRow(rowid);
 				Object[] objects = downloadData.get(key);
 				int cellid = 0;
 
 				for (Object obj : objects) {
 					Cell cell = row.createCell(cellid++);
 					cell.setCellValue((String) obj);
+					if (rowid == 0) {
+						cell.setCellStyle(style);
+					}
 				}
+				rowid++;
 			}
+
+			for (int i = 0; i < Constants.HEADERS_LENGTH; i++) {
+				spreadsheet.autoSizeColumn(i);
+			}
+
 			String actualPath = filePath + File.separator + new Date().getTime();
 			String fullFilePath = actualPath + File.separator + "STUDENTS.xlsx";
 			boolean exists = new File(actualPath).exists();
 			if (!exists) {
 				new File(actualPath).mkdirs();
 			}
-			// writing the workbook into the file...
+			// writing the workbook into the file
 			FileOutputStream out = new FileOutputStream(new File(fullFilePath));
 			workbook.write(out);
 			out.close();
