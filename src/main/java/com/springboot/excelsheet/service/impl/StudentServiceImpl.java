@@ -14,8 +14,10 @@ import java.util.TreeMap;
 import javax.annotation.PostConstruct;
 import javax.servlet.ServletContext;
 
+import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFRow;
@@ -135,7 +137,7 @@ public class StudentServiceImpl implements StudentService {
 	 * Error file generation.
 	 *
 	 * @param uploadStudentDataDTOs the upload Student data DTOs
-	 * @param originalFileName   the original file name
+	 * @param originalFileName      the original file name
 	 * @return the string
 	 */
 	private static String errorFileGeneration(List<UploadStdentDTO> uploadStudentDataDTOs, String originalFileName) {
@@ -220,41 +222,59 @@ public class StudentServiceImpl implements StudentService {
 			workbook = new XSSFWorkbook();
 			XSSFSheet spreadsheet = workbook.createSheet("Student Sheet");
 			XSSFRow row;
-			int index = 1;
-			Map<Integer, Object[]> downloadData = new TreeMap<Integer, Object[]>();
-			downloadData.put(index++,
-					new Object[] { "Student Id", "Full Name", "Email ID", "Mobile Number", "Course", "Fee" });
 
-			for (StudentDTO downloadStudent : downloadStudents) {
-				downloadData.put(index++,
-						new Object[] { downloadStudent.getStudentId(), downloadStudent.getFullName(),
-								downloadStudent.getEmailId(), downloadStudent.getMobileNumber(),
-								downloadStudent.getCourse(), downloadStudent.getFee() });
+			String[] HEADERs = { "Student Id", "Full Name", "Email ID", "Mobile Number", "Course", "Fee" };
+
+			row = spreadsheet.createRow(0);
+			XSSFCellStyle style = workbook.createCellStyle();
+			style.setFillForegroundColor(IndexedColors.LIGHT_CORNFLOWER_BLUE.getIndex());
+			style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			Font font = workbook.createFont();
+			font.setFontName(HSSFFont.FONT_ARIAL);
+			font.setFontHeightInPoints((short) 12);
+			font.setBold(true);
+			style.setFont(font);
+			int cellId = 0;
+			for (String string : HEADERs) {
+				Cell cell = row.createCell(cellId++);
+				cell.setCellValue(string);
+				cell.setCellStyle(style);
 			}
 
-			XSSFCellStyle style = workbook.createCellStyle();
-			style.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
-			style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+			int rowid = 1;
+			for (StudentDTO studentDTO : downloadStudents) {
 
-			int rowid = 0;
-			for (Integer key : downloadData.keySet()) {
+				row = spreadsheet.createRow(rowid++);
 
-				row = spreadsheet.createRow(rowid);
-				Object[] objects = downloadData.get(key);
-				int cellid = 0;
-
-				for (Object obj : objects) {
-					Cell cell = row.createCell(cellid++);
-					cell.setCellValue((String) obj);
-					if (rowid == 0) {
-						cell.setCellStyle(style);
+				for (int i = 0; i < HEADERs.length; i++) {
+					Cell cell = row.createCell(i);
+					switch (i) {
+					case 0:
+						cell.setCellValue(studentDTO.getStudentId());
+						break;
+					case 1:
+						cell.setCellValue(studentDTO.getFullName());
+						break;
+					case 2:
+						cell.setCellValue(studentDTO.getEmailId());
+						break;
+					case 3:
+						cell.setCellValue(studentDTO.getMobileNumber());
+						break;
+					case 4:
+						cell.setCellValue(studentDTO.getCourse());
+						break;
+					case 5:
+						cell.setCellValue(studentDTO.getFee());
+						break;
+					default:
+						break;
 					}
 				}
-				rowid++;
 			}
 
-			for (int i = 0; i < Constants.HEADERS_LENGTH; i++) {
-				spreadsheet.autoSizeColumn(i);
+			for (int j = 0; j < Constants.HEADERS_LENGTH; j++) {
+				spreadsheet.autoSizeColumn(j);
 			}
 
 			String actualPath = filePath + File.separator + new Date().getTime();
